@@ -266,7 +266,7 @@ class MLBotService {
 // Create singleton instance
 const mlBotService = new MLBotService();
 
-// Don't auto-connect - let components connect when needed
-// mlBotService.connectWebSocket();
+  // Auto-connect with error handling
+  // mlBotService.connectWebSocket();
 
 export default mlBotService; 

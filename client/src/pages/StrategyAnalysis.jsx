@@ -86,9 +86,6 @@ const StrategyAnalysis = () => {
         throw new Error('Failed to get strategy status');
       }
 
-      setStrategyStatus(newStatus);
-      setStrategyPerformance(newPerformance);
-      setStrategyErrors(newErrors);
       setLastUpdate(new Date());
     } catch (error) {
       console.error('Error getting strategy status:', error);
@@ -186,18 +183,6 @@ const StrategyAnalysis = () => {
     const interval = setInterval(fetchStrategies, 30000); // Update every 30 seconds
     return () => clearInterval(interval);
   }, []);
-      icon: MousePointer,
-      category: 'Order Flow',
-      complexity: 'Advanced'
-    },
-    {
-      key: 'iceberg_detection',
-      name: 'Iceberg Detection Strategy',
-      performance: '+17.4%',
-      winRate: '70%',
-      sharpe: '1.76',
-      status: 'Active',
-  // Real strategies data will be loaded from bot API
 
   return (
     <div className="p-6 space-y-6">

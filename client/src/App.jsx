@@ -26,6 +26,7 @@ import DataMonitor from './pages/DataMonitor';
 // ML Models
 import MLModels from './pages/MLModels';
 import authService from './services/authService';
+import ErrorBoundary from './components/common/ErrorBoundary';
 import './App.css';
 
 function App() {
@@ -106,32 +107,34 @@ function App() {
         <SymbolProvider>
           <AppStatusProvider>
             <Router>
-              <div className="min-h-screen bg-[var(--bg-primary)]">
-                <Routes>
-                  <Route path="/" element={
-                    <Layout user={user} onLogout={handleLogout} onUpdateProfile={handleUpdateProfile} />
-                  }>
-                  <Route index element={<Dashboard />} />
-                  <Route path="performance" element={<Performance />} />
-                  <Route path="risk" element={<RiskAnalysis />} />
-                  <Route path="analytics" element={<Analytics />} />
-                  <Route path="analytics/charts" element={<AdvancedCharts />} />
-                  <Route path="analytics/correlation" element={<CorrelationMatrix />} />
-                  <Route path="analytics/strategy" element={<StrategyAnalysis />} />
-                  <Route path="trading" element={<Trading />} />
-                  <Route path="trade-signals" element={<TradeSignals />} />
-                  <Route path="ai-assistant" element={<AIAssistant />} />
-                  <Route path="ai-chat" element={<AIChat />} />
-                  <Route path="ai-insights" element={<AIInsights />} />
-                  {/* ML Models Route */}
-                  <Route path="ml-models" element={<MLModels />} />
-                  <Route path="data-monitor" element={<DataMonitor />} />
-                  <Route path="journal" element={<TradingJournal />} />
-                  <Route path="backtesting" element={<Backtesting />} />
-                  <Route path="settings" element={<Settings />} />
-                </Route>
-              </Routes>
-            </div>
+              <ErrorBoundary>
+                <div className="min-h-screen bg-[var(--bg-primary)]">
+                  <Routes>
+                    <Route path="/" element={
+                      <Layout user={user} onLogout={handleLogout} onUpdateProfile={handleUpdateProfile} />
+                    }>
+                    <Route index element={<Dashboard />} />
+                    <Route path="performance" element={<Performance />} />
+                    <Route path="risk" element={<RiskAnalysis />} />
+                    <Route path="analytics" element={<Analytics />} />
+                    <Route path="analytics/charts" element={<AdvancedCharts />} />
+                    <Route path="analytics/correlation" element={<CorrelationMatrix />} />
+                    <Route path="analytics/strategy" element={<StrategyAnalysis />} />
+                    <Route path="trading" element={<Trading />} />
+                    <Route path="trade-signals" element={<TradeSignals />} />
+                    <Route path="ai-assistant" element={<AIAssistant />} />
+                    <Route path="ai-chat" element={<AIChat />} />
+                    <Route path="ai-insights" element={<AIInsights />} />
+                    {/* ML Models Route */}
+                    <Route path="ml-models" element={<MLModels />} />
+                    <Route path="data-monitor" element={<DataMonitor />} />
+                    <Route path="journal" element={<TradingJournal />} />
+                    <Route path="backtesting" element={<Backtesting />} />
+                    <Route path="settings" element={<Settings />} />
+                  </Route>
+                </Routes>
+              </div>
+            </ErrorBoundary>
           </Router>
         </AppStatusProvider>
       </SymbolProvider>
