@@ -1,5 +1,6 @@
 const express = require('express');
 const { requireUser } = require('./middleware/auth.js');
+const tradeSignalsService = require('../services/tradeSignalsService');
 const router = express.Router();
 
 // Mock data for development - replace with actual database calls
@@ -364,6 +365,255 @@ router.post('/journal', requireUser, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to save journal entry'
+    });
+  }
+});
+
+// Enhanced Trade Signals Routes
+router.get('/signals/:symbol', requireUser, async (req, res) => {
+  try {
+    const { symbol } = req.params;
+    const { refresh = false } = req.query;
+
+    if (refresh === 'true') {
+      // Clear cache for this symbol
+      tradeSignalsService.cache.delete(symbol);
+    }
+
+    const signal = await tradeSignalsService.generateTradeSignals(symbol);
+    
+    res.json({
+      success: true,
+      data: signal
+    });
+  } catch (error) {
+    console.error('Error fetching trade signals:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch trade signals',
+      error: error.message
+    });
+  }
+});
+
+// Get batch signals for multiple symbols
+router.post('/signals/batch', requireUser, async (req, res) => {
+  try {
+    const { symbols } = req.body;
+    
+    if (!symbols || !Array.isArray(symbols) || symbols.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Symbols array is required'
+      });
+    }
+
+    if (symbols.length > 10) {
+      return res.status(400).json({
+        success: false,
+        message: 'Maximum 10 symbols allowed per request'
+      });
+    }
+
+    const signals = await tradeSignalsService.getBatchSignals(symbols);
+    
+    res.json({
+      success: true,
+      data: signals
+    });
+  } catch (error) {
+    console.error('Error fetching batch signals:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch batch signals',
+      error: error.message
+    });
+  }
+});
+
+// Get real-time signals (WebSocket endpoint)
+router.get('/signals/realtime/:symbols', requireUser, async (req, res) => {
+  try {
+    const { symbols } = req.params;
+    const symbolArray = symbols.split(',').map(s => s.trim());
+    
+    if (symbolArray.length > 5) {
+      return res.status(400).json({
+        success: false,
+        message: 'Maximum 5 symbols allowed for real-time updates'
+      });
+    }
+
+    // Set up SSE for real-time updates
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      'Access-Control-Allow-Origin': '*'
+    });
+
+    const stopUpdates = await tradeSignalsService.getRealTimeSignals(
+      symbolArray,
+      (signals) => {
+        res.write(`data: ${JSON.stringify({ success: true, data: signals })}\n\n`);
+      }
+    );
+
+    // Clean up on client disconnect
+    req.on('close', () => {
+      stopUpdates();
+    });
+  } catch (error) {
+    console.error('Error setting up real-time signals:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to set up real-time signals',
+      error: error.message
+    });
+  }
+});
+
+// Get signal history for a symbol
+router.get('/signals/:symbol/history', requireUser, async (req, res) => {
+  try {
+    const { symbol } = req.params;
+    const { days = 30 } = req.query;
+
+    // TODO: Implement signal history from database
+    const mockHistory = Array.from({ length: parseInt(days) }, (_, i) => ({
+      date: new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString(),
+      signal: ['BUY', 'SELL', 'HOLD'][Math.floor(Math.random() * 3)],
+      confidence: Math.floor(Math.random() * 40) + 60,
+      price: 175 + Math.random() * 10,
+      accuracy: Math.random() > 0.5
+    }));
+
+    res.json({
+      success: true,
+      data: {
+        symbol: symbol.toUpperCase(),
+        history: mockHistory,
+        accuracy: {
+          overall: 0.72,
+          buy: 0.68,
+          sell: 0.75,
+          hold: 0.71
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching signal history:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch signal history',
+      error: error.message
+    });
+  }
+});
+
+// Get signal performance metrics
+router.get('/signals/performance', requireUser, async (req, res) => {
+  try {
+    const { period = '30d' } = req.query;
+
+    // TODO: Calculate actual performance metrics from signal history
+    const performance = {
+      period,
+      totalSignals: 156,
+      accuracy: 0.72,
+      profitableSignals: 112,
+      averageReturn: 0.045,
+      bestSignal: {
+        symbol: 'AAPL',
+        date: '2024-01-15',
+        return: 0.12,
+        signal: 'BUY'
+      },
+      worstSignal: {
+        symbol: 'TSLA',
+        date: '2024-01-10',
+        return: -0.08,
+        signal: 'SELL'
+      },
+      bySignalType: {
+        buy: { count: 67, accuracy: 0.68, avgReturn: 0.052 },
+        sell: { count: 45, accuracy: 0.75, avgReturn: 0.038 },
+        hold: { count: 44, accuracy: 0.71, avgReturn: 0.041 }
+      }
+    };
+
+    res.json({
+      success: true,
+      data: performance
+    });
+  } catch (error) {
+    console.error('Error fetching signal performance:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch signal performance',
+      error: error.message
+    });
+  }
+});
+
+// Save signal to user's watchlist with custom alerts
+router.post('/signals/:symbol/watch', requireUser, async (req, res) => {
+  try {
+    const { symbol } = req.params;
+    const { alertPrice, alertType = 'price' } = req.body;
+
+    // TODO: Save to user's signal watchlist in database
+    const watchItem = {
+      userId: req.user.id,
+      symbol: symbol.toUpperCase(),
+      alertPrice: parseFloat(alertPrice),
+      alertType,
+      createdAt: new Date().toISOString()
+    };
+
+    res.json({
+      success: true,
+      data: watchItem,
+      message: `Signal watch added for ${symbol.toUpperCase()}`
+    });
+  } catch (error) {
+    console.error('Error adding signal watch:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to add signal watch',
+      error: error.message
+    });
+  }
+});
+
+// Get user's signal watchlist
+router.get('/signals/watchlist', requireUser, async (req, res) => {
+  try {
+    // TODO: Get from user's signal watchlist in database
+    const mockWatchlist = [
+      {
+        symbol: 'AAPL',
+        alertPrice: 180.00,
+        alertType: 'price',
+        createdAt: '2024-01-15T00:00:00Z',
+        lastSignal: {
+          signal: 'BUY',
+          confidence: 85,
+          timestamp: '2024-01-15T10:30:00Z'
+        }
+      }
+    ];
+
+    res.json({
+      success: true,
+      data: mockWatchlist
+    });
+  } catch (error) {
+    console.error('Error fetching signal watchlist:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch signal watchlist',
+      error: error.message
     });
   }
 });
