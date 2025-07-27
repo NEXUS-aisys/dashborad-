@@ -70,34 +70,20 @@ const TradingJournal = () => {
     }
   };
 
-  // Mock function to simulate bot trade sync
+  // Real bot trade sync function
   const syncBotTrades = async () => {
     setLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const response = await fetch('http://localhost:5000/api/trades/bot');
       
-      // Mock bot trade data
-      const mockBotTrade = {
-        id: Date.now(),
-        type: 'bot',
-        symbol: 'AAPL',
-        action: Math.random() > 0.5 ? 'BUY' : 'SELL',
-        entryPrice: (Math.random() * 200 + 100).toFixed(2),
-        exitPrice: (Math.random() * 200 + 100).toFixed(2),
-        contracts: Math.floor(Math.random() * 10) + 1,
-        takeProfit: (Math.random() * 20 + 10).toFixed(2),
-        stopLoss: (Math.random() * 10 + 5).toFixed(2),
-        openTime: new Date().toISOString(),
-        closeTime: new Date(Date.now() + Math.random() * 86400000).toISOString(),
-        pnl: (Math.random() * 1000 - 500).toFixed(2),
-        status: Math.random() > 0.3 ? 'closed' : 'open',
-        strategy: ['Momentum', 'Mean Reversion', 'Breakout'][Math.floor(Math.random() * 3)]
-      };
-
-      const updatedTrades = [mockBotTrade, ...botTrades];
-      setBotTrades(updatedTrades);
-      saveTrades('bot_trades', updatedTrades);
+      if (response.ok) {
+        const botTradesData = await response.json();
+        const updatedTrades = [...botTradesData, ...botTrades];
+        setBotTrades(updatedTrades);
+        saveTrades('bot_trades', updatedTrades);
+      } else {
+        throw new Error('Failed to fetch bot trades');
+      }
     } catch (error) {
       console.error('Error syncing bot trades:', error);
     } finally {

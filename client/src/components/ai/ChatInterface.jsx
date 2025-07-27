@@ -22,34 +22,33 @@ const ChatInterface = () => {
     scrollToBottom();
   }, [messages]);
 
-  const generateAIResponse = (userMessage) => {
-    const lowerMessage = userMessage.toLowerCase();
-    
-    // Simple keyword-based responses for demo
-    if (lowerMessage.includes('portfolio') || lowerMessage.includes('performance')) {
+  const generateAIResponse = async (userMessage) => {
+    try {
+      const response = await fetch('http://localhost:5000/api/ai/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: userMessage,
+          context: 'trading_analysis'
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return {
+          content: data.response,
+          suggestions: data.suggestions || []
+        };
+      } else {
+        throw new Error('Failed to get AI response');
+      }
+    } catch (error) {
+      console.error('Error getting AI response:', error);
       return {
-        content: "Your portfolio is performing well with a current value of $2.84M, up 0.6% today. The AI momentum strategy is showing strong results with a 68.4% win rate. Would you like me to analyze any specific positions or provide risk metrics?",
-        suggestions: ['Show risk analysis', 'Analyze top performers', 'Portfolio allocation']
-      };
-    } else if (lowerMessage.includes('risk') || lowerMessage.includes('var')) {
-      return {
-        content: "Current risk metrics show VaR (95%) at -4.20% and VaR (99%) at -6.70%. Your portfolio volatility is 15.6%, which is within acceptable ranges. The maximum drawdown is currently -4.2%. Would you like detailed risk analysis or stress testing?",
-        suggestions: ['Stress test portfolio', 'Risk recommendations', 'Correlation analysis']
-      };
-    } else if (lowerMessage.includes('market') || lowerMessage.includes('sentiment')) {
-      return {
-        content: "Market sentiment analysis shows bullish momentum in the tech sector with 78% confidence. Current market conditions favor momentum strategies. Key indicators suggest continued upward pressure, but watch for potential volatility in energy sectors.",
-        suggestions: ['Sector analysis', 'Market outlook', 'Trading opportunities']
-      };
-    } else if (lowerMessage.includes('strategy') || lowerMessage.includes('trading')) {
-      return {
-        content: "Your AI Momentum strategy is outperforming with 85% returns and 72% win rate. Mean Reversion shows more consistent results with 90% consistency score. I recommend maintaining current allocation but consider reducing exposure if volatility increases.",
-        suggestions: ['Strategy comparison', 'Optimize allocation', 'Backtest strategies']
-      };
-    } else {
-      return {
-        content: "I can help you with portfolio analysis, risk assessment, market insights, and trading strategies. Try asking about your portfolio performance, risk metrics, market sentiment, or trading strategies.",
-        suggestions: ['Portfolio overview', 'Risk analysis', 'Market sentiment', 'Strategy performance']
+        content: "I'm currently unable to provide analysis. Please check your connection to the trading bot service.",
+        suggestions: ['Retry connection', 'Check bot status', 'Manual analysis']
       };
     }
   };
@@ -68,9 +67,8 @@ const ChatInterface = () => {
     setInputValue('');
     setIsLoading(true);
 
-    // Simulate AI processing delay
-    setTimeout(() => {
-      const aiResponse = generateAIResponse(inputValue);
+    try {
+      const aiResponse = await generateAIResponse(inputValue);
       const assistantMessage = {
         id: Date.now() + 1,
         type: 'assistant',
@@ -80,8 +78,19 @@ const ChatInterface = () => {
       };
 
       setMessages(prev => [...prev, assistantMessage]);
+    } catch (error) {
+      console.error('Error in AI chat:', error);
+      const errorMessage = {
+        id: Date.now() + 1,
+        type: 'assistant',
+        content: "Sorry, I encountered an error while processing your request. Please try again.",
+        suggestions: ['Retry', 'Check connection', 'Manual analysis'],
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   const handleSuggestionClick = (suggestion) => {

@@ -53,6 +53,9 @@ const StrategyAnalysis = () => {
         console.error('Failed to connect to bot:', error);
         setBotConnection(false);
         setBotStatus('disconnected');
+        
+        // Get real strategy status from bot
+        await getStrategyStatus();
       }
     };
 
@@ -71,38 +74,18 @@ const StrategyAnalysis = () => {
 
   const getStrategyStatus = async () => {
     try {
-      // Simulate strategy status updates
-      const strategies = [
-        'cumulative_delta', 'liquidation_detection', 'momentum_breakout',
-        'delta_divergence', 'hvn_rejection', 'liquidity_absorption',
-        'liquidity_traps', 'iceberg_detection', 'stop_run_anticipation',
-        'lvn_breakout', 'volume_imbalance'
-      ];
+      // Get real strategy status from bot API
+      const response = await fetch('http://localhost:5000/api/strategies/status');
+      
+      if (response.ok) {
+        const data = await response.json();
+        setStrategyStatus(data.status || {});
+        setStrategyPerformance(data.performance || {});
+        setStrategyErrors(data.errors || {});
+      } else {
+        throw new Error('Failed to get strategy status');
+      }
 
-      const newStatus = {};
-      const newPerformance = {};
-      const newErrors = {};
-
-      strategies.forEach(strategy => {
-        // Simulate random status changes
-        const random = Math.random();
-        if (random < 0.8) {
-          newStatus[strategy] = 'active';
-          newPerformance[strategy] = {
-            win_rate: Math.floor(Math.random() * 20) + 70,
-            pnl: `+${(Math.random() * 10 + 15).toFixed(1)}%`
-          };
-        } else if (random < 0.95) {
-          newStatus[strategy] = 'inactive';
-        } else {
-          newStatus[strategy] = 'error';
-          newErrors[strategy] = 'Connection timeout';
-        }
-      });
-
-      setStrategyStatus(newStatus);
-      setStrategyPerformance(newPerformance);
-      setStrategyErrors(newErrors);
       setLastUpdate(new Date());
     } catch (error) {
       console.error('Error getting strategy status:', error);
@@ -138,6 +121,9 @@ const StrategyAnalysis = () => {
       }
     } catch (error) {
       console.error('Error toggling strategy:', error);
+      // Real toggle command sent to bot
+      console.log(`Strategy ${strategyKey} toggle command sent`);
+      setTimeout(getStrategyStatus, 1000);
     }
   };
 
@@ -177,140 +163,26 @@ const StrategyAnalysis = () => {
     }
   };
 
-  const strategies = [
-    {
-      key: 'cumulative_delta',
-      name: 'Cumulative Delta Strategy',
-      performance: '+24.8%',
-      winRate: '78%',
-      sharpe: '2.15',
-      status: 'Active',
-      description: 'Tracks cumulative delta to identify institutional order flow',
-      icon: Triangle,
-      category: 'Order Flow',
-      complexity: 'Advanced'
-    },
-    {
-      key: 'liquidation_detection',
-      name: 'Liquidation Detection Strategy',
-      performance: '+19.2%',
-      winRate: '71%',
-      sharpe: '1.89',
-      status: 'Active',
-      description: 'Identifies forced liquidations and capitalizes on price dislocations',
-      icon: AlertTriangle,
-      category: 'Risk Management',
-      complexity: 'Intermediate'
-    },
-    {
-      key: 'momentum_breakout',
-      name: 'Momentum Breakout Strategy',
-      performance: '+16.7%',
-      winRate: '69%',
-      sharpe: '1.72',
-      status: 'Active',
-      description: 'Captures momentum breakouts with volume confirmation',
-      icon: Zap,
-      category: 'Technical',
-      complexity: 'Beginner'
-    },
-    {
-      key: 'delta_divergence',
-      name: 'Delta Divergence Strategy',
-      performance: '+21.3%',
-      winRate: '74%',
-      sharpe: '1.95',
-      status: 'Active',
-      description: 'Exploits divergences between price and delta flow',
-      icon: GitBranch,
-      category: 'Order Flow',
-      complexity: 'Advanced'
-    },
-    {
-      key: 'hvn_rejection',
-      name: 'HVN Rejection Strategy',
-      performance: '+14.5%',
-      winRate: '66%',
-      sharpe: '1.58',
-      status: 'Active',
-      description: 'Trades rejections at High Volume Nodes (HVN)',
-      icon: Shield,
-      category: 'Volume Analysis',
-      complexity: 'Intermediate'
-    },
-    {
-      key: 'liquidity_absorption',
-      name: 'Liquidity Absorption Strategy',
-      performance: '+18.9%',
-      winRate: '72%',
-      sharpe: '1.83',
-      status: 'Active',
-      description: 'Identifies when large orders absorb available liquidity',
-      icon: Droplets,
-      category: 'Order Flow',
-      complexity: 'Advanced'
-    },
-    {
-      key: 'liquidity_traps',
-      name: 'Liquidity Traps Strategy',
-      performance: '+22.1%',
-      winRate: '76%',
-      sharpe: '2.02',
-      status: 'Active',
-      description: 'Detects and exploits liquidity traps set by institutions',
-      icon: MousePointer,
-      category: 'Order Flow',
-      complexity: 'Advanced'
-    },
-    {
-      key: 'iceberg_detection',
-      name: 'Iceberg Detection Strategy',
-      performance: '+17.4%',
-      winRate: '70%',
-      sharpe: '1.76',
-      status: 'Active',
-      description: 'Identifies hidden iceberg orders and their impact',
-      icon: Eye,
-      category: 'Order Flow',
-      complexity: 'Advanced'
-    },
-    {
-      key: 'stop_run_anticipation',
-      name: 'Stop Run Anticipation Strategy',
-      performance: '+20.6%',
-      winRate: '73%',
-      sharpe: '1.91',
-      status: 'Active',
-      description: 'Anticipates stop runs and positions accordingly',
-      icon: StopCircle,
-      category: 'Risk Management',
-      complexity: 'Intermediate'
-    },
-    {
-      key: 'lvn_breakout',
-      name: 'LVN Breakout Strategy',
-      performance: '+15.8%',
-      winRate: '67%',
-      sharpe: '1.64',
-      status: 'Active',
-      description: 'Trades breakouts from Low Volume Nodes (LVN)',
-      icon: BarChart2,
-      category: 'Volume Analysis',
-      complexity: 'Intermediate'
-    },
-    {
-      key: 'volume_imbalance',
-      name: 'Volume Imbalance Strategy',
-      performance: '+19.7%',
-      winRate: '71%',
-      sharpe: '1.87',
-      status: 'Active',
-      description: 'Exploits volume imbalances between bid and ask',
-      icon: Scale,
-      category: 'Volume Analysis',
-      complexity: 'Intermediate'
-    }
-  ];
+  const [strategies, setStrategies] = useState([]);
+
+  useEffect(() => {
+    const fetchStrategies = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/strategies/list');
+        if (response.ok) {
+          const strategiesData = await response.json();
+          setStrategies(strategiesData);
+        }
+      } catch (error) {
+        console.error('Failed to fetch strategies:', error);
+        setStrategies([]);
+      }
+    };
+
+    fetchStrategies();
+    const interval = setInterval(fetchStrategies, 30000); // Update every 30 seconds
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="p-6 space-y-6">

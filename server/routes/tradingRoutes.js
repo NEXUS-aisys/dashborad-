@@ -2,48 +2,17 @@ const express = require('express');
 const { requireUser } = require('./middleware/auth.js');
 const router = express.Router();
 
-// Mock data for development - replace with actual database calls
-const mockPortfolio = {
-  totalValue: 125000,
-  totalGain: 15000,
-  totalGainPercent: 13.6,
-  positions: [
-    { symbol: 'AAPL', shares: 50, currentPrice: 175.50, value: 8775, gain: 1275 },
-    { symbol: 'TSLA', shares: 25, currentPrice: 245.80, value: 6145, gain: -455 },
-    { symbol: 'NVDA', shares: 30, currentPrice: 420.25, value: 12607.50, gain: 2107.50 }
-  ]
-};
-
-const mockTradingHistory = [
-  {
-    id: '1',
-    symbol: 'AAPL',
-    type: 'BUY',
-    shares: 10,
-    price: 170.25,
-    date: '2024-01-15T10:30:00Z',
-    total: 1702.50
-  },
-  {
-    id: '2',
-    symbol: 'TSLA',
-    type: 'SELL',
-    shares: 5,
-    price: 248.90,
-    date: '2024-01-14T14:45:00Z',
-    total: 1244.50
-  }
-];
+// Real data from database - no mock data
 
 // Get user portfolio
 router.get('/portfolio', requireUser, async (req, res) => {
   try {
-    // TODO: Replace with actual database query
-    // const portfolio = await PortfolioService.getByUserId(req.user.id);
+    // Get portfolio from database
+    const portfolio = await SupabaseService.getPortfolio(req.user.id);
     
     res.json({
       success: true,
-      data: mockPortfolio
+      data: portfolio
     });
   } catch (error) {
     console.error('Error fetching portfolio:', error);
@@ -59,8 +28,8 @@ router.get('/history', requireUser, async (req, res) => {
   try {
     const { page = 1, limit = 20, symbol, type } = req.query;
     
-    // TODO: Replace with actual database query with filters
-    let history = mockTradingHistory;
+    // Get trading history from database
+    let history = await SupabaseService.getRecentTrades(req.user.id, parseInt(limit));
     
     if (symbol) {
       history = history.filter(trade => trade.symbol === symbol.toUpperCase());

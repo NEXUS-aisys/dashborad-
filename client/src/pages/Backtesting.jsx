@@ -172,8 +172,8 @@ const Backtesting = () => {
         console.log(`Received ${data.length} data points for ${symbol}`);
         
         if (data.length === 0) {
-          console.warn(`No data received for ${symbol}, using mock data`);
-          return generateMockHistoricalData(symbol, startDate, endDate);
+                console.warn(`No data received for ${symbol}`);
+      throw new Error(`No historical data available for ${symbol}`);
         }
         
         // Filter data by date range
@@ -187,8 +187,8 @@ const Backtesting = () => {
         console.log(`Filtered to ${filteredData.length} data points for date range`);
         
         if (filteredData.length === 0) {
-          console.warn(`No data in date range for ${symbol}, using mock data`);
-          return generateMockHistoricalData(symbol, startDate, endDate);
+                  console.warn(`No data in date range for ${symbol}`);
+        throw new Error(`No historical data available for ${symbol} in specified date range`);
         }
         
         return filteredData.map(item => ({
@@ -200,39 +200,16 @@ const Backtesting = () => {
           volume: parseInt(item.volume)
         }));
       } else {
-        console.warn(`Failed to fetch data for ${symbol}, using mock data`);
-        return generateMockHistoricalData(symbol, startDate, endDate);
+        console.warn(`Failed to fetch data for ${symbol}`);
+        throw new Error(`Failed to fetch historical data for ${symbol}`);
       }
     } catch (error) {
       console.error(`Error fetching data for ${symbol}:`, error);
-      return generateMockHistoricalData(symbol, startDate, endDate);
+      throw new Error(`Error fetching data for ${symbol}: ${error.message}`);
     }
   };
 
-  // Mock historical data generator (fallback)
-  const generateMockHistoricalData = (symbol, startDate, endDate) => {
-    const data = [];
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    let currentPrice = 100 + Math.random() * 100;
-    
-    for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
-      if (date.getDay() !== 0 && date.getDay() !== 6) { // Skip weekends
-        const change = (Math.random() - 0.5) * 0.05; // ±2.5% daily change
-        currentPrice *= (1 + change);
-        
-        data.push({
-          date: new Date(date),
-          open: currentPrice * (1 + (Math.random() - 0.5) * 0.01),
-          high: currentPrice * (1 + Math.random() * 0.02),
-          low: currentPrice * (1 - Math.random() * 0.02),
-          close: currentPrice,
-          volume: Math.floor(Math.random() * 1000000) + 100000
-        });
-      }
-    }
-    return data;
-  };
+  // No mock data - real data only
 
   // Run backtest with real data
   const runBacktest = async () => {
@@ -295,37 +272,7 @@ const Backtesting = () => {
 
     } catch (error) {
       console.error('Backtest error:', error);
-      // Fallback to mock results if real data fails
-      const mockResults = {
-        trades: [
-          {
-            id: 1,
-            symbol: 'AAPL',
-            action: 'BUY',
-            entryDate: '2024-01-15',
-            entryPrice: 150.25,
-            exitDate: '2024-01-25',
-            exitPrice: 165.50,
-            quantity: 10,
-            pnl: 152.50,
-            return: 0.1016
-          }
-        ],
-        equity: [{ date: '2024-01-01', value: initialCapital }],
-        drawdown: [{ date: '2024-01-01', value: 0 }]
-      };
-
-      setResults(mockResults);
-      setMetrics({
-        totalReturn: 0,
-        annualizedReturn: 0,
-        sharpeRatio: 0,
-        maxDrawdown: 0,
-        winRate: 0,
-        profitFactor: 0,
-        totalTrades: 0,
-        avgTradeDuration: 0
-      });
+      setError(error.message);
     }
 
     setIsRunning(false);

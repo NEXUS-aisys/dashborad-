@@ -49,59 +49,32 @@ const AdvancedCharts = () => {
     </div>
   );
 
-  // Strategy-specific data
-  const strategyData = {
-    'cumulative-delta': {
-      deltaFlow: [12, 18, 25, 32, 28, 35, 42, 38, 45, 52, 48, 55, 62, 58, 65],
-      buyPressure: [8, 12, 15, 20, 18, 22, 25, 23, 28, 30, 27, 32, 35, 33, 38],
-      sellPressure: [4, 6, 10, 12, 10, 13, 17, 15, 17, 22, 21, 23, 27, 25, 27]
-    },
-    'liquidation-detection': {
-      zones: [
-        { level: 18500, strength: 85, type: 'long', volume: 1250 },
-        { level: 18450, strength: 72, type: 'short', volume: 980 },
-        { level: 18400, strength: 93, type: 'long', volume: 1450 },
-        { level: 18350, strength: 68, type: 'short', volume: 890 },
-        { level: 18300, strength: 78, type: 'long', volume: 1120 }
-      ],
-      currentPrice: 18425,
-      riskLevel: 35
-    },
-    'momentum-breakout': {
-      price: [18000, 18050, 18100, 18150, 18200, 18250, 18300, 18350, 18400, 18450, 18500, 18550, 18600, 18650, 18700],
-      momentum: [0, 5, 12, 18, 25, 32, 28, 35, 42, 48, 55, 62, 58, 65, 72],
-      breakouts: [false, false, false, false, false, true, false, false, false, true, false, false, false, true, false],
-      volume: [400, 450, 520, 580, 650, 1200, 480, 540, 620, 1100, 490, 560, 640, 1150, 510]
-    },
-    'delta-divergence': {
-      price: [18000, 18020, 18040, 18060, 18080, 18100, 18080, 18060, 18040, 18020, 18000, 17980, 17960, 17940, 17920],
-      delta: [10, 15, 20, 25, 30, 35, 30, 25, 20, 15, 10, 5, 0, -5, -10],
-      divergence: [false, false, false, false, false, false, false, false, false, false, true, false, false, false, false],
-      signal: 'bearish'
-    },
-    'hvn-rejection': {
-      nodes: [
-        { price: 18500, volume: 2500, strength: 95, rejected: true },
-        { price: 18450, volume: 1800, strength: 78, rejected: false },
-        { price: 18400, volume: 2200, strength: 88, rejected: true },
-        { price: 18350, volume: 1600, strength: 72, rejected: false },
-        { price: 18300, volume: 2000, strength: 82, rejected: true }
-      ],
-      currentPrice: 18425,
-      rejectionCount: 3
-    },
-    'liquidity-absorption': {
-      levels: [
-        { price: 18500, liquidity: 1500, absorbed: 1200, remaining: 300 },
-        { price: 18450, liquidity: 1200, absorbed: 980, remaining: 220 },
-        { price: 18400, liquidity: 1800, absorbed: 1450, remaining: 350 },
-        { price: 18350, liquidity: 1000, absorbed: 750, remaining: 250 },
-        { price: 18300, liquidity: 1400, absorbed: 1100, remaining: 300 }
-      ],
-      absorptionRate: 78,
-      totalLiquidity: 6900
-    }
-  };
+  // Real strategy data fetching
+  const [strategyData, setStrategyData] = useState({});
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStrategyData = async () => {
+      try {
+        const response = await fetch(`http://localhost:5000/api/strategies/data?timeframe=${timeframe}`);
+        if (response.ok) {
+          const data = await response.json();
+          setStrategyData(data);
+        } else {
+          throw new Error('Failed to fetch strategy data');
+        }
+      } catch (error) {
+        console.error('Error fetching strategy data:', error);
+        setStrategyData({});
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchStrategyData();
+    const interval = setInterval(fetchStrategyData, 30000); // Update every 30 seconds
+    return () => clearInterval(interval);
+  }, [timeframe]);
 
   // 1. CUMULATIVE DELTA STRATEGY
   const CumulativeDeltaChart = () => {

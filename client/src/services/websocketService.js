@@ -10,6 +10,17 @@ class WebSocketService {
 
   connect() {
     try {
+      // Check if already connected
+      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+        console.log('WebSocket already connected');
+        return;
+      }
+
+      // Close existing connection if any
+      if (this.ws) {
+        this.ws.close();
+      }
+
       this.ws = new WebSocket('ws://localhost:3000/trading-data');
       
       this.ws.onopen = () => {
@@ -22,14 +33,21 @@ class WebSocketService {
       };
       
       this.ws.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        this.handleMessage(data);
+        try {
+          const data = JSON.parse(event.data);
+          this.handleMessage(data);
+        } catch (error) {
+          console.error('Error parsing WebSocket message:', error);
+        }
       };
       
       this.ws.onclose = () => {
         console.log('❌ Disconnected from trading data WebSocket');
         this.isConnected = false;
-        this.handleReconnect();
+        // Only reconnect if not manually disconnected
+        if (this.ws) {
+          this.handleReconnect();
+        }
       };
       
       this.ws.onerror = (error) => {
@@ -57,56 +75,65 @@ class WebSocketService {
   }
 
   subscribeToAllData() {
-    if (!this.isConnected) return;
+    if (!this.isConnected || !this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      console.log('WebSocket not ready for subscription');
+      return;
+    }
 
-    // Subscribe to all strategy data
-    const strategies = [
-      'cumulative-delta',
-      'liquidation-detection', 
-      'momentum-breakout',
-      'delta-divergence',
-      'hvn-rejection',
-      'liquidity-absorption',
-      'liquidity-traps',
-      'iceberg-detection',
-      'stop-run-anticipation',
-      'lvn-breakout',
-      'volume-imbalance'
-    ];
+    try {
+      // Subscribe to all strategy data
+      const strategies = [
+        'cumulative-delta',
+        'liquidation-detection', 
+        'momentum-breakout',
+        'delta-divergence',
+        'hvn-rejection',
+        'liquidity-absorption',
+        'liquidity-traps',
+        'iceberg-detection',
+        'stop-run-anticipation',
+        'lvn-breakout',
+        'volume-imbalance'
+      ];
 
-    // Subscribe to ML model data
-    const mlModels = [
-      'lstm',
-      'transformer',
-      'cnn1d',
-      'catboost',
-      'lightgbm',
-      'xgboost',
-      'tabnet',
-      'volatility-hybrid',
-      'uncertainty',
-      'regime-detector',
-      'ensemble-meta',
-      'autoencoder',
-      'bayesian-risk'
-    ];
+      // Subscribe to ML model data
+      const mlModels = [
+        'lstm',
+        'transformer',
+        'cnn1d',
+        'catboost',
+        'lightgbm',
+        'xgboost',
+        'tabnet',
+        'volatility-hybrid',
+        'uncertainty',
+        'regime-detector',
+        'ensemble-meta',
+        'autoencoder',
+        'bayesian-risk'
+      ];
 
-    // Subscribe to all data types
-    const subscriptions = [
-      ...strategies.map(strategy => ({ type: 'strategy', name: strategy })),
-      ...mlModels.map(model => ({ type: 'ml', name: model })),
-      { type: 'market-data', name: 'general' },
-      { type: 'volume-data', name: 'general' },
-      { type: 'price-data', name: 'general' }
-    ];
+      // Subscribe to all data types
+      const subscriptions = [
+        ...strategies.map(strategy => ({ type: 'strategy', name: strategy })),
+        ...mlModels.map(model => ({ type: 'ml', name: model })),
+        { type: 'market-data', name: 'general' },
+        { type: 'volume-data', name: 'general' },
+        { type: 'price-data', name: 'general' }
+      ];
 
-    subscriptions.forEach(sub => {
-      this.ws.send(JSON.stringify({
-        type: 'subscribe',
-        dataType: sub.type,
-        name: sub.name
-      }));
-    });
+      subscriptions.forEach(sub => {
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+          this.ws.send(JSON.stringify({
+            type: 'subscribe',
+            dataType: sub.type,
+            name: sub.name
+          }));
+        }
+      });
+    } catch (error) {
+      console.error('Error subscribing to data:', error);
+    }
   }
 
   handleMessage(data) {
@@ -178,6 +205,7 @@ class WebSocketService {
     }
     this.isConnected = false;
     this.subscribers.clear();
+    this.reconnectAttempts = 0;
   }
 
   getConnectionStatus() {

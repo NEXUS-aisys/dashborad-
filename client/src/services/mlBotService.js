@@ -11,6 +11,12 @@ class MLBotService {
   // Connect to Local Bot WebSocket
   connectWebSocket() {
     try {
+      // Check if WebSocket is already connected
+      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+        console.log('WebSocket already connected');
+        return;
+      }
+
       this.ws = new WebSocket(this.wsUrl);
       
       this.ws.onopen = () => {
@@ -30,8 +36,10 @@ class MLBotService {
       this.ws.onclose = () => {
         console.log('Disconnected from Local Bot WebSocket');
         this.isConnected = false;
-        // Reconnect after 5 seconds
-        setTimeout(() => this.connectWebSocket(), 5000);
+        // Only reconnect if not manually disconnected
+        if (this.ws) {
+          setTimeout(() => this.connectWebSocket(), 5000);
+        }
       };
 
       this.ws.onerror = (error) => {
@@ -40,6 +48,7 @@ class MLBotService {
       };
     } catch (error) {
       console.error('Failed to connect to Local Bot:', error);
+      // Don't auto-reconnect on connection failure
     }
   }
 
@@ -250,13 +259,14 @@ class MLBotService {
       this.ws = null;
     }
     this.isConnected = false;
+    this.callbacks.clear();
   }
 }
 
 // Create singleton instance
 const mlBotService = new MLBotService();
 
-// Auto-connect when service is imported
-mlBotService.connectWebSocket();
+  // Auto-connect with error handling
+  // mlBotService.connectWebSocket();
 
 export default mlBotService; 
