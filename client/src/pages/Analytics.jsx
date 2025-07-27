@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BarChart3, LineChart, PieChart, TrendingUp, Target, Brain, Signal, ArrowUp } from 'lucide-react';
+import { BarChart3, LineChart, PieChart, TrendingUp, Target, Brain, Signal, ArrowUp, Activity } from 'lucide-react';
 import PortfolioChart from '../components/charts/PortfolioChart';
 import CorrelationMatrix from '../components/charts/CorrelationMatrix';
 import RiskAnalysisChart from '../components/charts/RiskAnalysisChart';
@@ -8,6 +8,7 @@ import SymbolAnalysis from '../components/trading/SymbolAnalysis';
 import EnhancedSymbolAnalysis from '../components/trading/EnhancedSymbolAnalysis';
 import EnhancedTradeSignals from '../components/trading/EnhancedTradeSignals';
 import SignalsDashboard from '../components/trading/SignalsDashboard';
+import InteractiveTradeSignals from '../components/trading/InteractiveTradeSignals';
 
 const Analytics = () => {
   const [activeTab, setActiveTab] = useState('performance');
@@ -27,7 +28,8 @@ const Analytics = () => {
     { id: 'correlation', label: 'Correlation', icon: PieChart },
     { id: 'strategy', label: 'Strategy Comparison', icon: Brain },
     { id: 'signals', label: 'Trade Signals', icon: Signal },
-    { id: 'dashboard', label: 'Signals Dashboard', icon: BarChart3 }
+    { id: 'dashboard', label: 'Signals Dashboard', icon: BarChart3 },
+    { id: 'interactive', label: 'Interactive Signals', icon: Activity }
   ];
 
   const renderTabContent = () => {
@@ -116,6 +118,9 @@ const Analytics = () => {
           
         case 'dashboard':
           return <SignalsDashboard />;
+          
+        case 'interactive':
+          return <InteractiveTradeSignals />;
           
         default:
           return null;

@@ -1,6 +1,7 @@
 const axios = require('axios');
 const { sendLLMRequest } = require('./llmService');
-const yahooFinance = require('yahoo-finance2').default;
+const marketDataService = require('./marketDataService');
+const technicalIndicatorsService = require('./technicalIndicatorsService');
 
 class TradeSignalsService {
   constructor() {
@@ -8,35 +9,12 @@ class TradeSignalsService {
     this.cacheTimeout = 5 * 60 * 1000; // 5 minutes
   }
 
-  // Get market data from Yahoo Finance
-  async getYahooData(symbol, period = '1mo') {
+  // Get market data from multiple providers
+  async getMarketData(symbol, period = '1mo') {
     try {
-      const quote = await yahooFinance.quote(symbol);
-      const historical = await yahooFinance.historical(symbol, {
-        period1: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-        period2: new Date(),
-        interval: '1d'
-      });
-
-      return {
-        symbol: quote.symbol,
-        currentPrice: quote.regularMarketPrice,
-        change: quote.regularMarketChange,
-        changePercent: quote.regularMarketChangePercent,
-        volume: quote.regularMarketVolume,
-        marketCap: quote.marketCap,
-        pe: quote.trailingPE,
-        historical: historical.map(d => ({
-          date: d.date,
-          open: d.open,
-          high: d.high,
-          low: d.low,
-          close: d.close,
-          volume: d.volume
-        }))
-      };
+      return await marketDataService.getMarketData(symbol, period);
     } catch (error) {
-      console.error(`Error fetching Yahoo data for ${symbol}:`, error);
+      console.error(`Error fetching market data for ${symbol}:`, error);
       throw error;
     }
   }
@@ -82,98 +60,16 @@ class TradeSignalsService {
     }
   }
 
-  // Calculate technical indicators
+  // Calculate technical indicators using enhanced service
   calculateTechnicalIndicators(historicalData) {
-    if (!historicalData || historicalData.length < 14) {
+    if (!historicalData || historicalData.length < 50) {
       return null;
     }
 
-    const closes = historicalData.map(d => d.close);
-    const volumes = historicalData.map(d => d.volume);
-
-    // RSI calculation
-    const rsi = this.calculateRSI(closes, 14);
-    
-    // MACD calculation
-    const macd = this.calculateMACD(closes);
-    
-    // Bollinger Bands
-    const bb = this.calculateBollingerBands(closes, 20, 2);
-    
-    // Volume analysis
-    const avgVolume = volumes.reduce((a, b) => a + b, 0) / volumes.length;
-    const currentVolume = volumes[volumes.length - 1];
-    const volumeRatio = currentVolume / avgVolume;
-
-    return {
-      rsi: rsi[rsi.length - 1],
-      macd: macd,
-      bollingerBands: bb,
-      volumeRatio: volumeRatio,
-      support: Math.min(...closes.slice(-10)),
-      resistance: Math.max(...closes.slice(-10))
-    };
+    return technicalIndicatorsService.calculateAllIndicators(historicalData);
   }
 
-  calculateRSI(prices, period = 14) {
-    const gains = [];
-    const losses = [];
-    
-    for (let i = 1; i < prices.length; i++) {
-      const change = prices[i] - prices[i - 1];
-      gains.push(change > 0 ? change : 0);
-      losses.push(change < 0 ? Math.abs(change) : 0);
-    }
-    
-    const avgGain = gains.slice(-period).reduce((a, b) => a + b, 0) / period;
-    const avgLoss = losses.slice(-period).reduce((a, b) => a + b, 0) / period;
-    
-    const rs = avgGain / avgLoss;
-    const rsi = 100 - (100 / (1 + rs));
-    
-    return [rsi];
-  }
 
-  calculateMACD(prices, fastPeriod = 12, slowPeriod = 26, signalPeriod = 9) {
-    const ema12 = this.calculateEMA(prices, fastPeriod);
-    const ema26 = this.calculateEMA(prices, slowPeriod);
-    
-    const macdLine = ema12[ema12.length - 1] - ema26[ema26.length - 1];
-    const signalLine = this.calculateEMA([macdLine], signalPeriod)[0];
-    const histogram = macdLine - signalLine;
-    
-    return {
-      macdLine,
-      signalLine,
-      histogram,
-      signal: macdLine > signalLine ? 'bullish' : 'bearish'
-    };
-  }
-
-  calculateEMA(prices, period) {
-    const k = 2 / (period + 1);
-    let ema = prices[0];
-    
-    for (let i = 1; i < prices.length; i++) {
-      ema = prices[i] * k + ema * (1 - k);
-    }
-    
-    return [ema];
-  }
-
-  calculateBollingerBands(prices, period = 20, stdDev = 2) {
-    const sma = prices.slice(-period).reduce((a, b) => a + b, 0) / period;
-    const variance = prices.slice(-period).reduce((sum, price) => {
-      return sum + Math.pow(price - sma, 2);
-    }, 0) / period;
-    const standardDeviation = Math.sqrt(variance);
-    
-    return {
-      upper: sma + (stdDev * standardDeviation),
-      middle: sma,
-      lower: sma - (stdDev * standardDeviation)
-    };
-  }
 
   // Generate ML-based predictions
   async generateMLPredictions(symbol, data) {
@@ -344,21 +240,21 @@ Format your response as JSON with the following structure:
       }
 
       // Fetch data from multiple sources
-      const [yahooData, localData] = await Promise.all([
-        this.getYahooData(symbol),
+      const [marketData, localData] = await Promise.all([
+        this.getMarketData(symbol),
         this.getLocalData(symbol)
       ]);
 
       // Calculate technical indicators
-      const technicalIndicators = this.calculateTechnicalIndicators(yahooData.historical);
+      const technicalIndicators = this.calculateTechnicalIndicators(marketData.historical);
 
       // Generate ML predictions
-      const mlPredictions = await this.generateMLPredictions(symbol, yahooData);
+      const mlPredictions = await this.generateMLPredictions(symbol, marketData);
 
       // Generate AI analysis
       const aiAnalysis = await this.generateAIAnalysis(
         symbol, 
-        yahooData, 
+        marketData, 
         localData, 
         technicalIndicators, 
         mlPredictions
@@ -368,7 +264,7 @@ Format your response as JSON with the following structure:
       const tradeSignal = {
         symbol: symbol.toUpperCase(),
         timestamp: new Date().toISOString(),
-        marketData: yahooData,
+        marketData: marketData,
         localData: localData,
         technicalIndicators: technicalIndicators,
         mlPredictions: mlPredictions,

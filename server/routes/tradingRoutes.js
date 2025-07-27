@@ -1,6 +1,8 @@
 const express = require('express');
 const { requireUser } = require('./middleware/auth.js');
 const tradeSignalsService = require('../services/tradeSignalsService');
+const marketDataService = require('../services/marketDataService');
+const technicalIndicatorsService = require('../services/technicalIndicatorsService');
 const router = express.Router();
 
 // Mock data for development - replace with actual database calls
@@ -613,6 +615,110 @@ router.get('/signals/watchlist', requireUser, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch signal watchlist',
+      error: error.message
+    });
+  }
+});
+
+// Market Data Provider Routes
+router.get('/market/providers', requireUser, async (req, res) => {
+  try {
+    const providers = marketDataService.getProviderStatus();
+    const cacheStats = marketDataService.getCacheStats();
+    
+    res.json({
+      success: true,
+      data: {
+        providers,
+        cache: cacheStats
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching provider status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch provider status',
+      error: error.message
+    });
+  }
+});
+
+router.post('/market/clear-cache', requireUser, async (req, res) => {
+  try {
+    marketDataService.clearCache();
+    
+    res.json({
+      success: true,
+      message: 'Market data cache cleared successfully'
+    });
+  } catch (error) {
+    console.error('Error clearing cache:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to clear cache',
+      error: error.message
+    });
+  }
+});
+
+// Technical Indicators Routes
+router.post('/indicators/calculate', requireUser, async (req, res) => {
+  try {
+    const { historicalData } = req.body;
+    
+    if (!historicalData || !Array.isArray(historicalData)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Historical data array is required'
+      });
+    }
+
+    const indicators = technicalIndicatorsService.calculateAllIndicators(historicalData);
+    const signals = technicalIndicatorsService.generateSignals(indicators);
+    
+    res.json({
+      success: true,
+      data: {
+        indicators,
+        signals
+      }
+    });
+  } catch (error) {
+    console.error('Error calculating indicators:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to calculate indicators',
+      error: error.message
+    });
+  }
+});
+
+router.get('/indicators/signals/:symbol', requireUser, async (req, res) => {
+  try {
+    const { symbol } = req.params;
+    const { period = '1mo' } = req.query;
+    
+    // Get market data
+    const marketData = await marketDataService.getMarketData(symbol, period);
+    
+    // Calculate indicators
+    const indicators = technicalIndicatorsService.calculateAllIndicators(marketData.historical);
+    const signals = technicalIndicatorsService.generateSignals(indicators);
+    
+    res.json({
+      success: true,
+      data: {
+        symbol: symbol.toUpperCase(),
+        indicators,
+        signals,
+        timestamp: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    console.error('Error generating indicator signals:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to generate indicator signals',
       error: error.message
     });
   }
