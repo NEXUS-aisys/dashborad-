@@ -9,6 +9,30 @@ import EnhancedSymbolAnalysis from '../components/trading/EnhancedSymbolAnalysis
 
 const Analytics = () => {
   const [activeTab, setActiveTab] = useState('performance');
+  const [performanceMetrics, setPerformanceMetrics] = useState({
+    sharpeRatio: 0,
+    volatility: 0,
+    maxDrawdown: 0,
+    winRate: 0
+  });
+
+  useEffect(() => {
+    const fetchPerformanceMetrics = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/performance/metrics');
+        if (response.ok) {
+          const data = await response.json();
+          setPerformanceMetrics(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch performance metrics:', error);
+      }
+    };
+
+    fetchPerformanceMetrics();
+    const interval = setInterval(fetchPerformanceMetrics, 30000); // Update every 30 seconds
+    return () => clearInterval(interval);
+  }, []);
   
   useEffect(() => {
     // Handle URL parameters for tab selection
@@ -47,29 +71,37 @@ const Analytics = () => {
               </div>
             </div>
             
-            {/* Rolling Metrics - Individual Cards */}
+            {/* Real Performance Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="professional-card fade-in" style={{ animationDelay: '300ms' }}>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-[var(--text-primary)] mb-1">1.84</div>
+                  <div className="text-2xl font-bold text-[var(--text-primary)] mb-1">
+                    {performanceMetrics.sharpeRatio ? performanceMetrics.sharpeRatio.toFixed(2) : '0.00'}
+                  </div>
                   <div className="text-sm text-[var(--text-muted)]">30-Day Sharpe Ratio</div>
                 </div>
               </div>
               <div className="professional-card fade-in" style={{ animationDelay: '350ms' }}>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-[var(--text-primary)] mb-1">15.6%</div>
+                  <div className="text-2xl font-bold text-[var(--text-primary)] mb-1">
+                    {performanceMetrics.volatility ? `${performanceMetrics.volatility.toFixed(1)}%` : '0.0%'}
+                  </div>
                   <div className="text-sm text-[var(--text-muted)]">30-Day Volatility</div>
                 </div>
               </div>
               <div className="professional-card fade-in" style={{ animationDelay: '400ms' }}>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-[var(--error)] mb-1">-4.2%</div>
+                  <div className="text-2xl font-bold text-[var(--error)] mb-1">
+                    {performanceMetrics.maxDrawdown ? `${performanceMetrics.maxDrawdown.toFixed(1)}%` : '0.0%'}
+                  </div>
                   <div className="text-sm text-[var(--text-muted)]">30-Day Max Drawdown</div>
                 </div>
               </div>
               <div className="professional-card fade-in" style={{ animationDelay: '450ms' }}>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-[var(--success)] mb-1">68.4%</div>
+                  <div className="text-2xl font-bold text-[var(--success)] mb-1">
+                    {performanceMetrics.winRate ? `${performanceMetrics.winRate.toFixed(1)}%` : '0.0%'}
+                  </div>
                   <div className="text-sm text-[var(--text-muted)]">30-Day Win Rate</div>
                 </div>
               </div>

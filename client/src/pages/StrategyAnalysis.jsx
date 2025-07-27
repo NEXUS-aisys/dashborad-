@@ -166,87 +166,26 @@ const StrategyAnalysis = () => {
     }
   };
 
-  const strategies = [
-    {
-      key: 'cumulative_delta',
-      name: 'Cumulative Delta Strategy',
-      performance: '+24.8%',
-      winRate: '78%',
-      sharpe: '2.15',
-      status: 'Active',
-      description: 'Tracks cumulative delta to identify institutional order flow',
-      icon: Triangle,
-      category: 'Order Flow',
-      complexity: 'Advanced'
-    },
-    {
-      key: 'liquidation_detection',
-      name: 'Liquidation Detection Strategy',
-      performance: '+19.2%',
-      winRate: '71%',
-      sharpe: '1.89',
-      status: 'Active',
-      description: 'Identifies forced liquidations and capitalizes on price dislocations',
-      icon: AlertTriangle,
-      category: 'Risk Management',
-      complexity: 'Intermediate'
-    },
-    {
-      key: 'momentum_breakout',
-      name: 'Momentum Breakout Strategy',
-      performance: '+16.7%',
-      winRate: '69%',
-      sharpe: '1.72',
-      status: 'Active',
-      description: 'Captures momentum breakouts with volume confirmation',
-      icon: Zap,
-      category: 'Technical',
-      complexity: 'Beginner'
-    },
-    {
-      key: 'delta_divergence',
-      name: 'Delta Divergence Strategy',
-      performance: '+21.3%',
-      winRate: '74%',
-      sharpe: '1.95',
-      status: 'Active',
-      description: 'Exploits divergences between price and delta flow',
-      icon: GitBranch,
-      category: 'Order Flow',
-      complexity: 'Advanced'
-    },
-    {
-      key: 'hvn_rejection',
-      name: 'HVN Rejection Strategy',
-      performance: '+14.5%',
-      winRate: '66%',
-      sharpe: '1.58',
-      status: 'Active',
-      description: 'Trades rejections at High Volume Nodes (HVN)',
-      icon: Shield,
-      category: 'Volume Analysis',
-      complexity: 'Intermediate'
-    },
-    {
-      key: 'liquidity_absorption',
-      name: 'Liquidity Absorption Strategy',
-      performance: '+18.9%',
-      winRate: '72%',
-      sharpe: '1.83',
-      status: 'Active',
-      description: 'Identifies when large orders absorb available liquidity',
-      icon: Droplets,
-      category: 'Order Flow',
-      complexity: 'Advanced'
-    },
-    {
-      key: 'liquidity_traps',
-      name: 'Liquidity Traps Strategy',
-      performance: '+22.1%',
-      winRate: '76%',
-      sharpe: '2.02',
-      status: 'Active',
-      description: 'Detects and exploits liquidity traps set by institutions',
+  const [strategies, setStrategies] = useState([]);
+
+  useEffect(() => {
+    const fetchStrategies = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/strategies/list');
+        if (response.ok) {
+          const strategiesData = await response.json();
+          setStrategies(strategiesData);
+        }
+      } catch (error) {
+        console.error('Failed to fetch strategies:', error);
+        setStrategies([]);
+      }
+    };
+
+    fetchStrategies();
+    const interval = setInterval(fetchStrategies, 30000); // Update every 30 seconds
+    return () => clearInterval(interval);
+  }, []);
       icon: MousePointer,
       category: 'Order Flow',
       complexity: 'Advanced'
@@ -258,48 +197,7 @@ const StrategyAnalysis = () => {
       winRate: '70%',
       sharpe: '1.76',
       status: 'Active',
-      description: 'Identifies hidden iceberg orders and their impact',
-      icon: Eye,
-      category: 'Order Flow',
-      complexity: 'Advanced'
-    },
-    {
-      key: 'stop_run_anticipation',
-      name: 'Stop Run Anticipation Strategy',
-      performance: '+20.6%',
-      winRate: '73%',
-      sharpe: '1.91',
-      status: 'Active',
-      description: 'Anticipates stop runs and positions accordingly',
-      icon: StopCircle,
-      category: 'Risk Management',
-      complexity: 'Intermediate'
-    },
-    {
-      key: 'lvn_breakout',
-      name: 'LVN Breakout Strategy',
-      performance: '+15.8%',
-      winRate: '67%',
-      sharpe: '1.64',
-      status: 'Active',
-      description: 'Trades breakouts from Low Volume Nodes (LVN)',
-      icon: BarChart2,
-      category: 'Volume Analysis',
-      complexity: 'Intermediate'
-    },
-    {
-      key: 'volume_imbalance',
-      name: 'Volume Imbalance Strategy',
-      performance: '+19.7%',
-      winRate: '71%',
-      sharpe: '1.87',
-      status: 'Active',
-      description: 'Exploits volume imbalances between bid and ask',
-      icon: Scale,
-      category: 'Volume Analysis',
-      complexity: 'Intermediate'
-    }
-  ];
+  // Real strategies data will be loaded from bot API
 
   return (
     <div className="p-6 space-y-6">

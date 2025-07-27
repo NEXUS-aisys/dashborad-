@@ -14,59 +14,36 @@ const StrategyComparisonChart = ({ height = 400 }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Generate mock strategy comparison data
-    setTimeout(() => {
-      const strategies = [
-        {
-          name: 'AI Momentum',
-          color: 'var(--accent-primary)',
-          metrics: {
-            'Return': 85,
-            'Sharpe Ratio': 78,
-            'Win Rate': 72,
-            'Max Drawdown': 65,
-            'Volatility': 60,
-            'Consistency': 80
-          }
-        },
-        {
-          name: 'Mean Reversion',
-          color: 'var(--info)',
-          metrics: {
-            'Return': 65,
-            'Sharpe Ratio': 85,
-            'Win Rate': 68,
-            'Max Drawdown': 80,
-            'Volatility': 75,
-            'Consistency': 90
-          }
-        },
-        {
-          name: 'Trend Following',
-          color: 'var(--success)',
-          metrics: {
-            'Return': 75,
-            'Sharpe Ratio': 70,
-            'Win Rate': 55,
-            'Max Drawdown': 45,
-            'Volatility': 40,
-            'Consistency': 65
-          }
+    const fetchStrategyData = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/strategies/performance');
+        if (response.ok) {
+          const strategiesData = await response.json();
+          
+          // Transform data for radar chart
+          const radarData = Object.keys(strategiesData[0]?.metrics || {}).map(metric => {
+            const dataPoint = { metric };
+            strategiesData.forEach(strategy => {
+              dataPoint[strategy.name] = strategy.metrics[metric];
+            });
+            return dataPoint;
+          });
+
+          setData({ strategies: strategiesData, radarData });
+        } else {
+          throw new Error('Failed to fetch strategy data');
         }
-      ];
+      } catch (error) {
+        console.error('Error fetching strategy data:', error);
+        setData({ strategies: [], radarData: [] });
+      } finally {
+        setLoading(false);
+      }
+    };
 
-      // Transform data for radar chart
-      const radarData = Object.keys(strategies[0].metrics).map(metric => {
-        const dataPoint = { metric };
-        strategies.forEach(strategy => {
-          dataPoint[strategy.name] = strategy.metrics[metric];
-        });
-        return dataPoint;
-      });
-
-      setData({ strategies, radarData });
-      setLoading(false);
-    }, 1200);
+    fetchStrategyData();
+    const interval = setInterval(fetchStrategyData, 60000); // Update every minute
+    return () => clearInterval(interval);
   }, []);
 
   const CustomTooltip = ({ active, payload, label }) => {

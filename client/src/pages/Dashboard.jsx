@@ -17,27 +17,51 @@ import RecentTrades from '../components/dashboard/RecentTrades';
 const Dashboard = () => {
   const [chartTimeframe, setChartTimeframe] = useState('1D');
 
-  // Static KPI data for display
+  // Real KPI data from trading bot and database
+  const [performanceMetrics, setPerformanceMetrics] = useState({
+    winRate: 0,
+    sharpeRatio: 0,
+    maxDrawdown: 0
+  });
+
+  useEffect(() => {
+    const fetchPerformanceMetrics = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/performance/metrics');
+        if (response.ok) {
+          const data = await response.json();
+          setPerformanceMetrics(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch performance metrics:', error);
+      }
+    };
+
+    fetchPerformanceMetrics();
+    const interval = setInterval(fetchPerformanceMetrics, 30000); // Update every 30 seconds
+    return () => clearInterval(interval);
+  }, []);
+
   const staticKPIs = [
     {
       title: 'Win Rate',
-      value: '68.4%',
-      change: '+1.2%',
-      trend: 'up',
+      value: `${performanceMetrics.winRate.toFixed(1)}%`,
+      change: performanceMetrics.winRateChange || '0%',
+      trend: performanceMetrics.winRateChange > 0 ? 'up' : 'down',
       icon: Target
     },
     {
       title: 'Sharpe Ratio',
-      value: '1.84',
-      change: '+0.12',
-      trend: 'up',
+      value: performanceMetrics.sharpeRatio.toFixed(2),
+      change: performanceMetrics.sharpeRatioChange || '0',
+      trend: performanceMetrics.sharpeRatioChange > 0 ? 'up' : 'down',
       icon: BarChart3
     },
     {
       title: 'Max Drawdown',
-      value: '-4.2%',
-      change: '+0.8%',
-      trend: 'up',
+      value: `${performanceMetrics.maxDrawdown.toFixed(1)}%`,
+      change: performanceMetrics.maxDrawdownChange || '0%',
+      trend: performanceMetrics.maxDrawdownChange > 0 ? 'up' : 'down',
       icon: TrendingDown
     }
   ];
@@ -189,18 +213,18 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="p-4 bg-[var(--bg-tertiary)] rounded-lg border-l-4 border-[var(--success)]">
             <h4 className="font-medium text-[var(--text-primary)] mb-2">Market Sentiment</h4>
-            <p className="text-body">Bullish momentum detected in tech sector with 78% confidence</p>
-            <div className="mt-2 text-xs text-[var(--success)]">Confidence: High</div>
+            <p className="text-body">Loading real-time market sentiment analysis...</p>
+            <div className="mt-2 text-xs text-[var(--success)]">Updating...</div>
           </div>
           <div className="p-4 bg-[var(--bg-tertiary)] rounded-lg border-l-4 border-[var(--warning)]">
             <h4 className="font-medium text-[var(--text-primary)] mb-2">Risk Alert</h4>
-            <p className="text-body">Elevated volatility expected in energy sector this week</p>
-            <div className="mt-2 text-xs text-[var(--warning)]">Confidence: Medium</div>
+            <p className="text-body">Loading real-time risk analysis...</p>
+            <div className="mt-2 text-xs text-[var(--warning)]">Updating...</div>
           </div>
           <div className="p-4 bg-[var(--bg-tertiary)] rounded-lg border-l-4 border-[var(--info)]">
             <h4 className="font-medium text-[var(--text-primary)] mb-2">Opportunity</h4>
-            <p className="text-body">Mean reversion signal identified in healthcare stocks</p>
-            <div className="mt-2 text-xs text-[var(--info)]">Confidence: High</div>
+            <p className="text-body">Loading real-time opportunity detection...</p>
+            <div className="mt-2 text-xs text-[var(--info)]">Updating...</div>
           </div>
         </div>
       </div>
