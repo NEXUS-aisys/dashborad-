@@ -12,11 +12,7 @@ if (config.STRIPE_SECRET_KEY && config.STRIPE_SECRET_KEY !== 'sk_test_placeholde
 class StripeService {
   static async createCheckoutSession(userId, email) {
     if (!stripe) {
-      // Return mock checkout session when Stripe is not configured
-      return {
-        url: 'https://checkout.stripe.com/demo-session',
-        id: 'cs_demo_session_id'
-      };
+      throw new Error('Stripe not configured - cannot create checkout session');
     }
 
     const session = await stripe.checkout.sessions.create({
@@ -36,8 +32,7 @@ class StripeService {
 
   static async handleWebhook(event) {
     if (!stripe) {
-      console.log('Stripe not configured - webhook ignored');
-      return;
+      throw new Error('Stripe not configured - cannot handle webhook');
     }
 
     switch (event.type) {

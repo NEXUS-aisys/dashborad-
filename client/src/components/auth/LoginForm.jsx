@@ -36,15 +36,7 @@ const LoginForm = ({ onLogin, onSwitchToRegister }) => {
     }
   };
 
-  const handleDemoLogin = () => {
-    const demoUser = {
-      id: 'demo',
-      name: 'Demo Trader',
-      email: 'demo@nexus.ai',
-      accessToken: 'demo-token-' + Date.now()
-    };
-    onLogin(demoUser);
-  };
+  // No demo login - real authentication only
 
   const handleGoogleLogin = () => {
     // OAuth login with Google

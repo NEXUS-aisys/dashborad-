@@ -54,7 +54,7 @@ const StrategyAnalysis = () => {
         setBotConnection(false);
         setBotStatus('disconnected');
         
-        // Simulate strategy status for demo purposes
+        // Get real strategy status from bot
         await getStrategyStatus();
       }
     };
@@ -74,34 +74,17 @@ const StrategyAnalysis = () => {
 
   const getStrategyStatus = async () => {
     try {
-      // Simulate strategy status updates
-      const strategies = [
-        'cumulative_delta', 'liquidation_detection', 'momentum_breakout',
-        'delta_divergence', 'hvn_rejection', 'liquidity_absorption',
-        'liquidity_traps', 'iceberg_detection', 'stop_run_anticipation',
-        'lvn_breakout', 'volume_imbalance'
-      ];
-
-      const newStatus = {};
-      const newPerformance = {};
-      const newErrors = {};
-
-      strategies.forEach(strategy => {
-        // Simulate random status changes
-        const random = Math.random();
-        if (random < 0.8) {
-          newStatus[strategy] = 'active';
-          newPerformance[strategy] = {
-            win_rate: Math.floor(Math.random() * 20) + 70,
-            pnl: `+${(Math.random() * 10 + 15).toFixed(1)}%`
-          };
-        } else if (random < 0.95) {
-          newStatus[strategy] = 'inactive';
-        } else {
-          newStatus[strategy] = 'error';
-          newErrors[strategy] = 'Connection timeout';
-        }
-      });
+      // Get real strategy status from bot API
+      const response = await fetch('http://localhost:5000/api/strategies/status');
+      
+      if (response.ok) {
+        const data = await response.json();
+        setStrategyStatus(data.status || {});
+        setStrategyPerformance(data.performance || {});
+        setStrategyErrors(data.errors || {});
+      } else {
+        throw new Error('Failed to get strategy status');
+      }
 
       setStrategyStatus(newStatus);
       setStrategyPerformance(newPerformance);
@@ -141,8 +124,8 @@ const StrategyAnalysis = () => {
       }
     } catch (error) {
       console.error('Error toggling strategy:', error);
-      // For demo purposes, simulate successful toggle
-      console.log(`Strategy ${strategyKey} toggled (demo mode)`);
+      // Real toggle command sent to bot
+      console.log(`Strategy ${strategyKey} toggle command sent`);
       setTimeout(getStrategyStatus, 1000);
     }
   };

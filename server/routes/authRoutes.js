@@ -15,23 +15,27 @@ router.post('/login', async (req, res) => {
     return sendError('Email and password are required');
   }
 
-  // Mock authentication - accept any email/password for development
-  const mockUser = {
-    id: 'user_' + Date.now(),
-    name: email.split('@')[0],
-    email: email,
-    role: 'trader',
-    createdAt: new Date().toISOString()
-  };
+  // Real authentication with Supabase
+  const { data: { user }, error } = await supabase.auth.signInWithPassword({
+    email,
+    password
+  });
 
-  // Generate mock tokens
-  const accessToken = 'mock_access_token_' + Date.now();
-  const refreshToken = 'mock_refresh_token_' + Date.now();
+  if (error) {
+    return res.status(401).json({
+      success: false,
+      message: error.message
+    });
+  }
 
   return res.json({
-    ...mockUser,
-    accessToken,
-    refreshToken
+    success: true,
+    data: {
+      id: user.id,
+      email: user.email,
+      accessToken: user.access_token,
+      refreshToken: user.refresh_token
+    }
   });
 });
 
@@ -43,23 +47,33 @@ router.post('/register', async (req, res, next) => {
     return sendError('Name, email, and password are required');
   }
 
-  // Mock registration - accept any valid data for development
-  const mockUser = {
-    id: 'user_' + Date.now(),
-    name: name,
-    email: email,
-    role: 'trader',
-    createdAt: new Date().toISOString()
-  };
+  // Real registration with Supabase
+  const { data: { user }, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        name: name,
+        role: 'trader'
+      }
+    }
+  });
 
-  // Generate mock tokens
-  const accessToken = 'mock_access_token_' + Date.now();
-  const refreshToken = 'mock_refresh_token_' + Date.now();
+  if (error) {
+    return res.status(400).json({
+      success: false,
+      message: error.message
+    });
+  }
 
   return res.json({
-    ...mockUser,
-    accessToken,
-    refreshToken
+    success: true,
+    data: {
+      id: user.id,
+      email: user.email,
+      accessToken: user.access_token,
+      refreshToken: user.refresh_token
+    }
   });
 });
 

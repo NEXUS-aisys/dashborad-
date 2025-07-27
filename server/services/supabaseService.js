@@ -80,12 +80,7 @@ class SupabaseService {
 
   static async getSubscription(userId) {
     if (!supabase) {
-      return {
-        user_id: userId,
-        stripe_customer_id: 'demo_customer',
-        stripe_status: 'active',
-        created_at: new Date().toISOString()
-      };
+      throw new Error('Supabase not configured - cannot get subscription');
     }
 
     const { data, error } = await supabase
