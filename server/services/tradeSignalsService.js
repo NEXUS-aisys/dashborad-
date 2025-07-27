@@ -101,30 +101,52 @@ class TradeSignalsService {
   // Generate AI-powered analysis and recommendations
   async generateAIAnalysis(symbol, marketData, localData, technicalIndicators, mlPredictions) {
     try {
+      const isFutures = marketData.instrumentType === 'futures';
+      const contractInfo = marketData.contractInfo || {};
+      
       const analysisPrompt = `
-Analyze the following trading data for ${symbol} and provide comprehensive trading recommendations:
+Analyze the following trading data for ${symbol} ${isFutures ? '(FUTURES CONTRACT)' : ''} and provide comprehensive trading recommendations:
 
 MARKET DATA:
 - Current Price: $${marketData.currentPrice}
 - Change: $${marketData.change} (${marketData.changePercent}%)
 - Volume: ${marketData.volume}
-- Market Cap: $${marketData.marketCap}
+${isFutures ? `- Contract: ${contractInfo.name || 'Futures Contract'}
+- Exchange: ${contractInfo.exchange || 'Unknown'}
+- Tick Size: ${contractInfo.tickSize || 'N/A'}
+- Tick Value: $${contractInfo.tickValue || 'N/A'}
+- Contract Size: ${contractInfo.contractSize || 'N/A'}
+- Margin Requirement: $${contractInfo.margin || 'N/A'}` : `- Market Cap: $${marketData.marketCap || 'N/A'}`}
 
 TECHNICAL INDICATORS:
-- RSI: ${technicalIndicators?.rsi || 'N/A'}
-- MACD: ${technicalIndicators?.macd?.signal || 'N/A'}
-- Support: $${technicalIndicators?.support || 'N/A'}
-- Resistance: $${technicalIndicators?.resistance || 'N/A'}
-- Volume Ratio: ${technicalIndicators?.volumeRatio || 'N/A'}
+- RSI: ${technicalIndicators?.rsi?.value?.toFixed(2) || 'N/A'} (${technicalIndicators?.rsi?.signal || 'N/A'})
+- MACD: ${technicalIndicators?.macd?.signal || 'N/A'} (Histogram: ${technicalIndicators?.macd?.histogram?.toFixed(3) || 'N/A'})
+- Bollinger Bands: ${technicalIndicators?.bollingerBands?.percentB?.toFixed(2) || 'N/A'}% B
+- Stochastic: ${technicalIndicators?.stochastic?.k?.toFixed(1) || 'N/A'} (${technicalIndicators?.stochastic?.signal || 'N/A'})
+- Williams %R: ${technicalIndicators?.williamsR?.value?.toFixed(1) || 'N/A'} (${technicalIndicators?.williamsR?.signal || 'N/A'})
+- CCI: ${technicalIndicators?.cci?.value?.toFixed(1) || 'N/A'} (${technicalIndicators?.cci?.signal || 'N/A'})
+- Volume: ${technicalIndicators?.volumeAnalysis?.volumeRatio?.toFixed(2) || 'N/A'}x average
+- Support: $${technicalIndicators?.support?.level?.toFixed(2) || 'N/A'}
+- Resistance: $${technicalIndicators?.resistance?.level?.toFixed(2) || 'N/A'}
+- Volatility: ${technicalIndicators?.volatility?.level || 'N/A'} (${technicalIndicators?.volatility?.annualized?.toFixed(2) || 'N/A'}% annualized)
+- Price Action: ${technicalIndicators?.priceAction?.pattern || 'N/A'} (${technicalIndicators?.priceAction?.momentum || 'N/A'})
 
 ML PREDICTIONS:
-- Next Day: $${mlPredictions?.shortTerm?.nextDay || 'N/A'}
-- Next Week: $${mlPredictions?.shortTerm?.nextWeek || 'N/A'}
-- Confidence: ${mlPredictions?.shortTerm?.confidence || 'N/A'}
-- Sentiment: ${mlPredictions?.sentiment || 'N/A'}
+- Signal: ${mlPredictions?.signal || 'N/A'}
+- Confidence: ${mlPredictions?.confidence || 'N/A'}%
+- Price Target: $${mlPredictions?.priceTarget || 'N/A'}
 
 BOT SIGNALS:
 ${localData?.botSignals ? JSON.stringify(localData.botSignals, null, 2) : 'No bot signals available'}
+
+${isFutures ? `FUTURES-SPECIFIC CONSIDERATIONS:
+- Leverage and margin requirements
+- Rollover implications
+- Overnight risk
+- Contract expiration
+- Basis risk and contango/backwardation
+- Tick value and contract size impact
+- Exchange-specific rules and trading hours` : ''}
 
 Please provide:
 1. Overall market sentiment (Bullish/Bearish/Neutral)
@@ -137,6 +159,7 @@ Please provide:
 8. Detailed reasoning
 9. Key risks to consider
 10. Position sizing recommendation
+${isFutures ? '11. Futures-specific risks and considerations' : ''}
 
 Format your response as JSON with the following structure:
 {
@@ -149,7 +172,13 @@ Format your response as JSON with the following structure:
   "riskRewardRatio": "1:2.5",
   "reasoning": "detailed explanation",
   "risks": ["risk1", "risk2"],
-  "positionSize": "2% of capital"
+  "positionSize": "2% of capital"${isFutures ? `,
+  "futuresSpecific": {
+    "leverageRisk": "High/Medium/Low",
+    "overnightRisk": "High/Medium/Low",
+    "rolloverConsideration": "Consider rolling to next contract",
+    "marginImplications": "Margin requirement impact"
+  }` : ''}
 }
 `;
 

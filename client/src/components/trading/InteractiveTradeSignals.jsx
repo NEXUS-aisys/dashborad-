@@ -327,12 +327,12 @@ const InteractiveTradeSignals = () => {
         <div className="space-y-4">
           <div className="flex items-center space-x-4">
             <div className="flex-1">
-              <Input
-                placeholder="Enter symbol (e.g., AAPL, TSLA)"
-                value={symbol}
-                onChange={(e) => setSymbol(e.target.value.toUpperCase())}
-                onKeyPress={(e) => e.key === 'Enter' && fetchSignals(symbol)}
-              />
+                           <Input
+               placeholder="Enter symbol (e.g., AAPL, TSLA, ES, NQ, YM, CL, GC)"
+               value={symbol}
+               onChange={(e) => setSymbol(e.target.value.toUpperCase())}
+               onKeyPress={(e) => e.key === 'Enter' && fetchSignals(symbol)}
+             />
             </div>
             <Button onClick={() => fetchSignals(symbol)} disabled={!symbol || loading}>
               {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Signal className="w-4 h-4" />}
@@ -394,6 +394,11 @@ const InteractiveTradeSignals = () => {
                     <Badge variant="outline">
                       {signals.marketData.provider || 'Unknown Provider'}
                     </Badge>
+                    {signals.marketData.instrumentType === 'futures' && (
+                      <Badge variant="secondary" className="bg-orange-100 text-orange-800">
+                        FUTURES
+                      </Badge>
+                    )}
                   </div>
                 </CardTitle>
               </CardHeader>
@@ -452,6 +457,39 @@ const InteractiveTradeSignals = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* Futures Contract Information */}
+                {signals.marketData.instrumentType === 'futures' && signals.marketData.contractInfo && (
+                  <div className="mt-4">
+                    <Separator className="my-4" />
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="text-center p-3 bg-orange-50 rounded-lg">
+                        <div className="text-sm text-orange-600 font-medium">Contract</div>
+                        <div className="text-sm font-bold text-orange-700">
+                          {signals.marketData.contractInfo.name}
+                        </div>
+                      </div>
+                      <div className="text-center p-3 bg-orange-50 rounded-lg">
+                        <div className="text-sm text-orange-600 font-medium">Exchange</div>
+                        <div className="text-sm font-bold text-orange-700">
+                          {signals.marketData.contractInfo.exchange}
+                        </div>
+                      </div>
+                      <div className="text-center p-3 bg-orange-50 rounded-lg">
+                        <div className="text-sm text-orange-600 font-medium">Tick Value</div>
+                        <div className="text-sm font-bold text-orange-700">
+                          ${signals.marketData.contractInfo.tickValue}
+                        </div>
+                      </div>
+                      <div className="text-center p-3 bg-orange-50 rounded-lg">
+                        <div className="text-sm text-orange-600 font-medium">Margin</div>
+                        <div className="text-sm font-bold text-orange-700">
+                          ${signals.marketData.contractInfo.margin?.toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -487,14 +525,35 @@ const InteractiveTradeSignals = () => {
                         {signals.technicalIndicators.stochastic?.signal || 'N/A'}
                       </div>
                     </div>
-                    <div className="text-center p-3 bg-gray-50 rounded-lg">
-                      <div className="text-sm text-gray-600">Volume</div>
-                      <div className="text-lg font-bold">{signals.technicalIndicators.volumeAnalysis?.volumeRatio?.toFixed(2) || 'N/A'}x</div>
-                      <div className="text-xs text-[var(--text-muted)] capitalize">
-                        {signals.technicalIndicators.volumeAnalysis?.trend || 'N/A'}
-                      </div>
-                    </div>
-                  </div>
+                                         <div className="text-center p-3 bg-gray-50 rounded-lg">
+                       <div className="text-sm text-gray-600">Volume</div>
+                       <div className="text-lg font-bold">{signals.technicalIndicators.volumeAnalysis?.volumeRatio?.toFixed(2) || 'N/A'}x</div>
+                       <div className="text-xs text-[var(--text-muted)] capitalize">
+                         {signals.technicalIndicators.volumeAnalysis?.trend || 'N/A'}
+                       </div>
+                     </div>
+                     <div className="text-center p-3 bg-gray-50 rounded-lg">
+                       <div className="text-sm text-gray-600">Williams %R</div>
+                       <div className="text-lg font-bold">{signals.technicalIndicators.williamsR?.value?.toFixed(1) || 'N/A'}</div>
+                       <div className="text-xs text-[var(--text-muted)] capitalize">
+                         {signals.technicalIndicators.williamsR?.signal || 'N/A'}
+                       </div>
+                     </div>
+                     <div className="text-center p-3 bg-gray-50 rounded-lg">
+                       <div className="text-sm text-gray-600">CCI</div>
+                       <div className="text-lg font-bold">{signals.technicalIndicators.cci?.value?.toFixed(1) || 'N/A'}</div>
+                       <div className="text-xs text-[var(--text-muted)] capitalize">
+                         {signals.technicalIndicators.cci?.signal || 'N/A'}
+                       </div>
+                     </div>
+                     <div className="text-center p-3 bg-gray-50 rounded-lg">
+                       <div className="text-sm text-gray-600">ATR</div>
+                       <div className="text-lg font-bold">{signals.technicalIndicators.atr?.value?.toFixed(2) || 'N/A'}</div>
+                       <div className="text-xs text-[var(--text-muted)]">
+                         {signals.technicalIndicators.atr?.volatility?.toFixed(2) || 'N/A'}% vol
+                       </div>
+                     </div>
+                   </div>
                 </CardContent>
               </Card>
             )}

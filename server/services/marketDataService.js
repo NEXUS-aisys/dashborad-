@@ -51,6 +51,12 @@ class MarketDataService {
       }
     }
 
+    // Handle futures contracts
+    const isFutures = this.isFuturesContract(symbol);
+    if (isFutures) {
+      return await this.getFuturesData(symbol, period);
+    }
+
     // Try providers in priority order
     const sortedProviders = Object.entries(this.providers)
       .filter(([_, config]) => config.enabled)
@@ -74,6 +80,206 @@ class MarketDataService {
     }
 
     throw new Error('All market data providers failed');
+  }
+
+  // Check if symbol is a futures contract
+  isFuturesContract(symbol) {
+    const futuresPatterns = [
+      /^[A-Z]{1,2}\d{1,2}$/, // ES, NQ, YM, RTY, CL, GC, etc.
+      /^[A-Z]{1,2}\d{4}$/,   // ES24, NQ24, etc.
+      /^[A-Z]{1,2}[A-Z]\d{2}$/, // ESZ24, NQH25, etc.
+      /^[A-Z]{1,2}\d{2}[A-Z]$/, // ES24Z, NQ25H, etc.
+    ];
+    
+    return futuresPatterns.some(pattern => pattern.test(symbol.toUpperCase()));
+  }
+
+  // Get futures data
+  async getFuturesData(symbol, period = '1mo') {
+    try {
+      // Try Yahoo Finance first (supports some futures)
+      const data = await this.fetchFromYahoo(symbol, period);
+      if (data) {
+        return { ...data, provider: 'yahoo', instrumentType: 'futures' };
+      }
+    } catch (error) {
+      console.log(`Yahoo Finance failed for futures ${symbol}, trying alternative sources`);
+    }
+
+    // For futures, we'll use a combination of sources
+    const futuresData = await this.generateFuturesData(symbol);
+    return { ...futuresData, provider: 'futures_synthetic', instrumentType: 'futures' };
+  }
+
+  // Generate synthetic futures data (for demonstration)
+  async generateFuturesData(symbol, period = '1mo') {
+    const basePrice = this.getBasePriceForFutures(symbol);
+    const volatility = this.getVolatilityForFutures(symbol);
+    
+    // Generate historical data
+    const historical = [];
+    const now = new Date();
+    const days = period === '1mo' ? 30 : period === '3mo' ? 90 : 7;
+    
+    for (let i = days; i >= 0; i--) {
+      const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+      const randomChange = (Math.random() - 0.5) * volatility * basePrice * 0.02;
+      const price = basePrice + randomChange;
+      
+      historical.push({
+        date,
+        open: price * (1 + (Math.random() - 0.5) * 0.01),
+        high: price * (1 + Math.random() * 0.02),
+        low: price * (1 - Math.random() * 0.02),
+        close: price,
+        volume: Math.floor(Math.random() * 1000000) + 100000
+      });
+    }
+
+    const currentPrice = historical[historical.length - 1].close;
+    const previousPrice = historical[historical.length - 2].close;
+    const change = currentPrice - previousPrice;
+    const changePercent = (change / previousPrice) * 100;
+
+    return {
+      symbol: symbol.toUpperCase(),
+      currentPrice,
+      change,
+      changePercent,
+      volume: historical[historical.length - 1].volume,
+      historical,
+      instrumentType: 'futures',
+      contractInfo: this.getFuturesContractInfo(symbol)
+    };
+  }
+
+  // Get base price for futures contracts
+  getBasePriceForFutures(symbol) {
+    const symbolUpper = symbol.toUpperCase();
+    
+    // E-mini S&P 500
+    if (symbolUpper.startsWith('ES')) return 4800;
+    // E-mini NASDAQ-100
+    if (symbolUpper.startsWith('NQ')) return 16500;
+    // E-mini Dow Jones
+    if (symbolUpper.startsWith('YM')) return 38000;
+    // E-mini Russell 2000
+    if (symbolUpper.startsWith('RTY')) return 2000;
+    // Crude Oil
+    if (symbolUpper.startsWith('CL')) return 75;
+    // Gold
+    if (symbolUpper.startsWith('GC')) return 2000;
+    // Silver
+    if (symbolUpper.startsWith('SI')) return 25;
+    // Natural Gas
+    if (symbolUpper.startsWith('NG')) return 3;
+    // 10-Year Treasury Note
+    if (symbolUpper.startsWith('ZN')) return 110;
+    // Euro FX
+    if (symbolUpper.startsWith('6E')) return 1.08;
+    // Japanese Yen
+    if (symbolUpper.startsWith('6J')) return 0.007;
+    
+    return 100; // Default
+  }
+
+  // Get volatility for futures contracts
+  getVolatilityForFutures(symbol) {
+    const symbolUpper = symbol.toUpperCase();
+    
+    // High volatility
+    if (symbolUpper.startsWith('NQ')) return 0.03;
+    if (symbolUpper.startsWith('RTY')) return 0.025;
+    
+    // Medium volatility
+    if (symbolUpper.startsWith('ES')) return 0.02;
+    if (symbolUpper.startsWith('CL')) return 0.025;
+    if (symbolUpper.startsWith('GC')) return 0.015;
+    
+    // Lower volatility
+    if (symbolUpper.startsWith('YM')) return 0.015;
+    if (symbolUpper.startsWith('ZN')) return 0.01;
+    if (symbolUpper.startsWith('6E')) return 0.012;
+    if (symbolUpper.startsWith('6J')) return 0.01;
+    
+    return 0.02; // Default
+  }
+
+  // Get futures contract information
+  getFuturesContractInfo(symbol) {
+    const symbolUpper = symbol.toUpperCase();
+    
+    const contractInfo = {
+      'ES': { name: 'E-mini S&P 500', exchange: 'CME', tickSize: 0.25, tickValue: 12.50 },
+      'NQ': { name: 'E-mini NASDAQ-100', exchange: 'CME', tickSize: 0.25, tickValue: 5.00 },
+      'YM': { name: 'E-mini Dow Jones', exchange: 'CBOT', tickSize: 1.00, tickValue: 5.00 },
+      'RTY': { name: 'E-mini Russell 2000', exchange: 'CME', tickSize: 0.10, tickValue: 5.00 },
+      'CL': { name: 'Crude Oil', exchange: 'NYMEX', tickSize: 0.01, tickValue: 10.00 },
+      'GC': { name: 'Gold', exchange: 'COMEX', tickSize: 0.10, tickValue: 10.00 },
+      'SI': { name: 'Silver', exchange: 'COMEX', tickSize: 0.005, tickValue: 25.00 },
+      'NG': { name: 'Natural Gas', exchange: 'NYMEX', tickSize: 0.001, tickValue: 10.00 },
+      'ZN': { name: '10-Year Treasury Note', exchange: 'CBOT', tickSize: 0.015625, tickValue: 15.625 },
+      '6E': { name: 'Euro FX', exchange: 'CME', tickSize: 0.0001, tickValue: 12.50 },
+      '6J': { name: 'Japanese Yen', exchange: 'CME', tickSize: 0.000001, tickValue: 12.50 }
+    };
+
+    // Find the base contract
+    for (const [base, info] of Object.entries(contractInfo)) {
+      if (symbolUpper.startsWith(base)) {
+        return {
+          ...info,
+          symbol: symbolUpper,
+          contractSize: this.getContractSize(symbolUpper),
+          margin: this.getMarginRequirement(symbolUpper)
+        };
+      }
+    }
+
+    return {
+      name: 'Unknown Futures Contract',
+      exchange: 'Unknown',
+      tickSize: 0.01,
+      tickValue: 10.00,
+      symbol: symbolUpper
+    };
+  }
+
+  // Get contract size
+  getContractSize(symbol) {
+    const symbolUpper = symbol.toUpperCase();
+    
+    if (symbolUpper.startsWith('ES')) return 50; // $50 × S&P 500 Index
+    if (symbolUpper.startsWith('NQ')) return 20; // $20 × NASDAQ-100 Index
+    if (symbolUpper.startsWith('YM')) return 5;  // $5 × Dow Jones Index
+    if (symbolUpper.startsWith('RTY')) return 50; // $50 × Russell 2000 Index
+    if (symbolUpper.startsWith('CL')) return 1000; // 1,000 barrels
+    if (symbolUpper.startsWith('GC')) return 100; // 100 troy ounces
+    if (symbolUpper.startsWith('SI')) return 5000; // 5,000 troy ounces
+    if (symbolUpper.startsWith('NG')) return 10000; // 10,000 MMBtu
+    if (symbolUpper.startsWith('ZN')) return 100000; // $100,000 face value
+    if (symbolUpper.startsWith('6E')) return 125000; // €125,000
+    if (symbolUpper.startsWith('6J')) return 12500000; // ¥12,500,000
+    
+    return 1000; // Default
+  }
+
+  // Get margin requirement
+  getMarginRequirement(symbol) {
+    const symbolUpper = symbol.toUpperCase();
+    
+    if (symbolUpper.startsWith('ES')) return 12000; // $12,000
+    if (symbolUpper.startsWith('NQ')) return 15000; // $15,000
+    if (symbolUpper.startsWith('YM')) return 8000;  // $8,000
+    if (symbolUpper.startsWith('RTY')) return 8000; // $8,000
+    if (symbolUpper.startsWith('CL')) return 5000;  // $5,000
+    if (symbolUpper.startsWith('GC')) return 8000;  // $8,000
+    if (symbolUpper.startsWith('SI')) return 10000; // $10,000
+    if (symbolUpper.startsWith('NG')) return 3000;  // $3,000
+    if (symbolUpper.startsWith('ZN')) return 2000;  // $2,000
+    if (symbolUpper.startsWith('6E')) return 3000;  // $3,000
+    if (symbolUpper.startsWith('6J')) return 3000;  // $3,000
+    
+    return 5000; // Default
   }
 
   async fetchFromProvider(providerName, symbol, period) {
