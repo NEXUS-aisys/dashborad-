@@ -3,8 +3,9 @@ const config = require('./config');
 
 let supabase = null;
 
-// Only initialize Supabase if credentials are provided
-if (config.SUPABASE_URL && config.SUPABASE_ANON_KEY) {
+// Only initialize Supabase if credentials are provided and not placeholder
+if (config.SUPABASE_URL && config.SUPABASE_ANON_KEY && 
+    config.SUPABASE_URL !== 'placeholder' && config.SUPABASE_ANON_KEY !== 'placeholder') {
   supabase = createClient(config.SUPABASE_URL, config.SUPABASE_ANON_KEY);
 }
 
