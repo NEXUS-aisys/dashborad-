@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { BarChart3, LineChart, PieChart, TrendingUp, Target, Brain, Signal, ArrowUp } from 'lucide-react';
+import { BarChart3, LineChart, PieChart, TrendingUp, Target, Brain, Signal, ArrowUp, Activity } from 'lucide-react';
 import PortfolioChart from '../components/charts/PortfolioChart';
 import CorrelationMatrix from '../components/charts/CorrelationMatrix';
 import RiskAnalysisChart from '../components/charts/RiskAnalysisChart';
 import StrategyComparisonChart from '../components/charts/StrategyComparisonChart';
 import SymbolAnalysis from '../components/trading/SymbolAnalysis';
 import EnhancedSymbolAnalysis from '../components/trading/EnhancedSymbolAnalysis';
+import EnhancedTradeSignals from '../components/trading/EnhancedTradeSignals';
+import SignalsDashboard from '../components/trading/SignalsDashboard';
+import InteractiveTradeSignals from '../components/trading/InteractiveTradeSignals';
 
 const Analytics = () => {
   const [activeTab, setActiveTab] = useState('performance');
@@ -48,7 +51,9 @@ const Analytics = () => {
     { id: 'risk', label: 'Risk Analysis', icon: Target },
     { id: 'correlation', label: 'Correlation', icon: PieChart },
     { id: 'strategy', label: 'Strategy Comparison', icon: Brain },
-    { id: 'signals', label: 'Trade Signals', icon: Signal }
+    { id: 'signals', label: 'Trade Signals', icon: Signal },
+    { id: 'dashboard', label: 'Signals Dashboard', icon: BarChart3 },
+    { id: 'interactive', label: 'Interactive Signals', icon: Activity }
   ];
 
   const renderTabContent = () => {
@@ -140,113 +145,17 @@ const Analytics = () => {
           </div>
         );
         
-      case 'signals':
-        return (
-          <div>
-            <div className="professional-card fade-in" style={{ animationDelay: '100ms' }}>
-              <div className="flex items-center space-x-3 mb-4">
-                <Signal className="w-5 h-5 text-[var(--accent-primary)]" />
-                <h3 className="text-subheading">Futures Contract Analysis</h3>
-              </div>
-              <p className="text-body mb-6">
-                Enter a futures contract symbol to get detailed AI analysis including market trends, support/resistance levels,
-                technical indicators, and clear trading recommendations.
-              </p>
-              <EnhancedSymbolAnalysis />
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-              <div className="professional-card fade-in" style={{ animationDelay: '300ms' }}>
-                <div className="p-4">
-                  <div className="flex items-center mb-3">
-                    <div className="w-10 h-10 rounded-full bg-[var(--accent-primary)]/10 flex items-center justify-center mr-3">
-                      <TrendingUp className="w-5 h-5 text-[var(--accent-primary)]" />
-                    </div>
-                    <h4 className="text-lg font-medium">Technical Analysis</h4>
-                  </div>
-                  <div className="space-y-2 mt-3">
-                    <div className="flex justify-between">
-                      <span className="text-[var(--text-muted)] text-sm">Trend:</span>
-                      <span className="font-medium">Bullish</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-[var(--text-muted)] text-sm">RSI:</span>
-                      <span className="font-medium">68.2 (Overbought)</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-[var(--text-muted)] text-sm">MACD:</span>
-                      <span className="font-medium">Bullish Crossover</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-[var(--text-muted)] text-sm">Volume:</span>
-                      <span className="font-medium">Above Average</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="professional-card fade-in" style={{ animationDelay: '400ms' }}>
-                <div className="p-4">
-                  <div className="flex items-center mb-3">
-                    <div className="w-10 h-10 rounded-full bg-[var(--success)]/10 flex items-center justify-center mr-3">
-                      <Signal className="w-5 h-5 text-[var(--success)]" />
-                    </div>
-                    <h4 className="text-lg font-medium">Signal</h4>
-                  </div>
-                  <div className="flex items-center justify-center my-3">
-                    <div className="inline-flex items-center px-4 py-2 rounded-full text-base font-medium bg-[var(--success)]/20 text-[var(--success)]">
-                      <ArrowUp className="w-5 h-5 mr-2" /> BUY
-                    </div>
-                  </div>
-                  <div className="space-y-2 mt-3">
-                    <div className="flex justify-between">
-                      <span className="text-[var(--text-muted)] text-sm">Confidence:</span>
-                      <span className="font-medium text-[var(--success)]">High</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-[var(--text-muted)] text-sm">Entry Point:</span>
-                      <span className="font-medium">4,805 - 4,820</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-[var(--text-muted)] text-sm">Target:</span>
-                      <span className="font-medium">4,900</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="professional-card fade-in" style={{ animationDelay: '500ms' }}>
-                <div className="p-4">
-                  <div className="flex items-center mb-3">
-                    <div className="w-10 h-10 rounded-full bg-[var(--warning)]/10 flex items-center justify-center mr-3">
-                      <Target className="w-5 h-5 text-[var(--warning)]" />
-                    </div>
-                    <h4 className="text-lg font-medium">Risk Management</h4>
-                  </div>
-                  <div className="space-y-2 mt-3">
-                    <div className="flex justify-between">
-                      <span className="text-[var(--text-muted)] text-sm">Stop Loss:</span>
-                      <span className="font-medium text-[var(--error)]">4,765</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-[var(--text-muted)] text-sm">Risk/Reward:</span>
-                      <span className="font-medium">1:2.5</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-[var(--text-muted)] text-sm">Position Size:</span>
-                      <span className="font-medium">2% of Capital</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-[var(--text-muted)] text-sm">Max Risk:</span>
-                      <span className="font-medium">1% per Trade</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-        
-      default:
-        return null;
+              case 'signals':
+          return <EnhancedTradeSignals />;
+          
+        case 'dashboard':
+          return <SignalsDashboard />;
+          
+        case 'interactive':
+          return <InteractiveTradeSignals />;
+          
+        default:
+          return null;
     }
   };
 
